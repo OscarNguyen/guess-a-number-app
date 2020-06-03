@@ -1,0 +1,81 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, Button, Alert } from 'react-native';
+import NumberContainer from '../components/NumberContainer';
+import Card from '../components/Card';
+import MainButton from '../components/MainButton';
+import { Ionicons } from '@expo/vector-icons';
+const generateRandom = (min, max, exclude) => {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  const randomNumber = Math.floor(Math.random() * (max - min)) + min;
+  if (randomNumber === exclude) {
+    return generateRandom(min, max, exclude);
+  } else {
+    return randomNumber;
+  }
+};
+
+const GameScreen = (props) => {
+  const [currentGuess, setCurrentGuess] = useState(generateRandom(1, 100, props.userChoice));
+  const [rounds, setRounds] = useState(0);
+  const currentLow = useRef(1);
+  const currentHigh = useRef(100);
+
+  const { userChoice, onGameOver } = props;
+
+  useEffect(() => {
+    if (currentGuess === props.userChoice) {
+      props.onGameOver(rounds);
+    }
+  }, [userChoice, onGameOver, currentGuess]);
+
+  const nextGuessHandler = (direction) => {
+    if (
+      (direction === 'lower' && currentGuess < props.userChoice) ||
+      (direction === 'greater' && currentGuess > props.userChoice)
+    ) {
+      Alert.alert('Lied', 'Redo', [{ style: 'cancel', text: 'Sorry' }]);
+      return;
+    } else if (direction === 'lower') {
+      currentHigh.current = currentGuess;
+    } else if (direction === 'greater') {
+      currentLow.current = currentGuess;
+    }
+    const nextNumber = generateRandom(currentLow.current, currentHigh.current, currentGuess);
+    setCurrentGuess(nextNumber);
+    setRounds(rounds + 1);
+  };
+
+  return (
+    <View style={styles.screen}>
+      <Text>Opponent's Guess</Text>
+      <NumberContainer>{currentGuess}</NumberContainer>
+      <Card style={styles.buttonContainer}>
+        <Button title="LOWER" onPress={() => nextGuessHandler('lower')} />
+        <MainButton onPress={() => nextGuessHandler('lower')}>
+          <Ionicons name="md-remove" size={24} color="white" />
+        </MainButton>
+        <MainButton onPress={() => nextGuessHandler('greater')}>
+          <Ionicons name="md-add" size={24} color="white" />
+        </MainButton>
+      </Card>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    padding: 10,
+    alignItems: 'center',
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 20,
+    width: 400,
+    maxWidth: '90%',
+  },
+});
+
+export default GameScreen;
